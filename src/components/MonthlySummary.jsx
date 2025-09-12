@@ -1,4 +1,4 @@
-export default function MonthlySummary({ monthlyTotal, weeklyTotal, dailyTotal }) {
+export default function MonthlySummary({ monthlyTotal, weeklyTotal, dailyTotal, daysInMonth, daysElapsed }) {
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat('en-IN', {
       style: 'currency',
@@ -44,13 +44,13 @@ export default function MonthlySummary({ monthlyTotal, weeklyTotal, dailyTotal }
           <div className="monthly-summary-stat">
             <span className="monthly-summary-stat-label">Average Daily Cost:</span>
             <span className="monthly-summary-stat-value">
-              {formatCurrency(monthlyTotal / new Date().getDate())}
+              {formatCurrency(monthlyTotal / Math.max(1, (typeof daysElapsed === 'number' ? daysElapsed : 0)))}
             </span>
           </div>
           <div className="monthly-summary-stat">
             <span className="monthly-summary-stat-label">Days Remaining:</span>
             <span className="monthly-summary-stat-value">
-              {new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).getDate() - new Date().getDate()}
+              {(typeof daysInMonth === 'number' && typeof daysElapsed === 'number') ? Math.max(0, daysInMonth - daysElapsed) : 0}
             </span>
           </div>
         </div>

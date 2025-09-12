@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useMenuData } from '../hooks/useMenuData';
 import { useAuth } from '../contexts/AuthContext';
 import Navigation from '../components/Navigation';
@@ -20,6 +20,8 @@ export default function Dashboard() {
     calculateMonthlyTotal,
     updateMealSelection,
     updateCustomPrice,
+    updateMealAmount,
+    updateAlternatePricesEnabled,
     loadMonthData,
     applyDefaultMealsToMonth
   } = useMenuData(currentUser);
@@ -58,6 +60,53 @@ export default function Dashboard() {
     return dates;
   }, [selectedMonth, selectedYear]);
 
+  // Compute today's total only if today is within the selected month
+  const daysInSelectedMonth = useMemo(() => new Date(selectedYear, selectedMonth + 1, 0).getDate(), [selectedYear, selectedMonth]);
+  const todayTotal = useMemo(() => {
+    const today = new Date();
+    if (today.getFullYear() !== selectedYear || today.getMonth() !== selectedMonth) return 0;
+    const todayKey = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+    return calculateDailyTotal(menuData[todayKey]);
+  }, [menuData, selectedYear, selectedMonth, calculateDailyTotal]);
+
+  // Determine if a date is in the future relative to today for the selected month/year
+  const isDateFutureForSelection = (dateObj) => {
+    const today = new Date();
+    // Entire month in the future
+    if (selectedYear > today.getFullYear() || (selectedYear === today.getFullYear() && selectedMonth > today.getMonth())) {
+      return true;
+    }
+    // Entire month in the past
+    if (selectedYear < today.getFullYear() || (selectedYear === today.getFullYear() && selectedMonth < today.getMonth())) {
+      return false;
+    }
+    // Same month: future if date is after today
+    return dateObj > new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  };
+
+  // Monthly total limited to days up to today when viewing current month
+  const monthlyTotalLimited = useMemo(() => {
+    let sum = 0;
+    currentMonthDates.forEach(({ date, dateKey }) => {
+      if (!isDateFutureForSelection(date)) {
+        sum += calculateDailyTotal(menuData[dateKey]);
+      }
+    });
+    return sum;
+  }, [currentMonthDates, menuData, selectedYear, selectedMonth, calculateDailyTotal]);
+
+  // Days elapsed used for average and remaining
+  const daysElapsed = useMemo(() => {
+    const today = new Date();
+    if (selectedYear > today.getFullYear() || (selectedYear === today.getFullYear() && selectedMonth > today.getMonth())) {
+      return 0; // future month
+    }
+    if (selectedYear < today.getFullYear() || (selectedYear === today.getFullYear() && selectedMonth < today.getMonth())) {
+      return daysInSelectedMonth; // past month
+    }
+    return today.getDate(); // current month
+  }, [selectedYear, selectedMonth, daysInSelectedMonth]);
+
   // Group dates by weeks
   const weeklyGroups = useMemo(() => {
     const weeks = [];
@@ -68,6 +117,19 @@ export default function Dashboard() {
   }, [currentMonthDates]);
 
   const currentWeek = weeklyGroups[selectedWeek] || [];
+
+  // Auto-focus navigator on the week containing the current day when viewing current month
+  useEffect(() => {
+    const today = new Date();
+    if (today.getFullYear() === selectedYear && today.getMonth() === selectedMonth) {
+      const todayKey = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+      const indexInMonth = currentMonthDates.findIndex(d => d.dateKey === todayKey);
+      if (indexInMonth !== -1) {
+        const weekIndex = Math.floor(indexInMonth / 7);
+        setSelectedWeek(weekIndex);
+      }
+    }
+  }, [selectedYear, selectedMonth, currentMonthDates]);
 
   if (loading) {
     return (
@@ -119,9 +181,11 @@ export default function Dashboard() {
         {/* Monthly Summary */}
         <div className="mb-8">
           <MonthlySummary 
-            monthlyTotal={calculateMonthlyTotal(selectedYear, selectedMonth)}
-            weeklyTotal={selectedWeek !== -1 ? calculateWeeklyTotal(currentWeek[0]?.dateKey) : 0}
-            dailyTotal={selectedWeek !== -1 ? calculateDailyTotal(menuData[currentWeek[0]?.dateKey]) : 0}
+            monthlyTotal={monthlyTotalLimited}
+            weeklyTotal={(selectedWeek !== -1 && currentWeek.length > 0) ? currentWeek.reduce((sum, d) => sum + (isDateFutureForSelection(d.date) ? 0 : calculateDailyTotal(menuData[d.dateKey])), 0) : 0}
+            dailyTotal={todayTotal}
+            daysInMonth={daysInSelectedMonth}
+            daysElapsed={daysElapsed}
           />
         </div>
 
@@ -182,6 +246,9 @@ export default function Dashboard() {
                 dailyTotal={calculateDailyTotal(menuData[day.dateKey])}
                 onMealSelectionChange={updateMealSelection}
                 onPriceChange={updateCustomPrice}
+                onAmountChange={updateMealAmount}
+                onAlternateToggle={updateAlternatePricesEnabled}
+                disabled={isDateFutureForSelection(day.date)}
               />
             ))}
           </div>
@@ -220,6 +287,9 @@ export default function Dashboard() {
                   dailyTotal={calculateDailyTotal(menuData[day.dateKey])}
                   onMealSelectionChange={updateMealSelection}
                   onPriceChange={updateCustomPrice}
+                  onAmountChange={updateMealAmount}
+                  onAlternateToggle={updateAlternatePricesEnabled}
+                  disabled={isDateFutureForSelection(day.date)}
                 />
               ))}
             </div>

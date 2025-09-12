@@ -77,7 +77,7 @@ export default function Profile() {
             <h2 className="profile-section-title">About</h2>
             <div className="profile-about-text">
               <p>
-                <strong>Mess Menu Dashboard</strong> - Version 1.0.0
+                <strong>Mess Menu Dashboard</strong> - Version 1.1.0
               </p>
               <p>
                 A comprehensive solution for managing your mess menu selections and tracking monthly expenses.

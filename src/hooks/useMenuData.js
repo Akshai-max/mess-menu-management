@@ -43,6 +43,12 @@ export function useMenuData(user) {
         morning: isSunday ? false : defaultMealPrefs.morning,
         afternoon: isSunday ? false : defaultMealPrefs.afternoon,
         evening: isSunday ? false : defaultMealPrefs.evening,
+        quantities: {
+          morning: 1,
+          afternoon: 1,
+          evening: 1
+        },
+        useAlternatePrices: false,
         customPrices: {
           morning: MEAL_PRICES.morning,
           afternoon: MEAL_PRICES.afternoon,
@@ -61,7 +67,10 @@ export function useMenuData(user) {
     let total = 0;
     Object.keys(MEAL_PRICES).forEach(meal => {
       if (daySelections[meal]) {
-        total += daySelections.customPrices?.[meal] || MEAL_PRICES[meal];
+        const basePrice = daySelections.customPrices?.[meal] ?? MEAL_PRICES[meal];
+        const quantity = Number.isFinite(daySelections.quantities?.[meal]) ? daySelections.quantities[meal] : 1;
+        const priceMultiplier = daySelections.useAlternatePrices ? 2 : 1;
+        total += basePrice * priceMultiplier * Math.max(0, quantity);
       }
     });
     return total;
@@ -209,13 +218,17 @@ export function useMenuData(user) {
     if (!user) return;
 
     try {
+      const parsed = typeof price === 'number' ? price : parseFloat(price);
+      const isValidNumber = Number.isFinite(parsed) && parsed >= 0;
+      const nextPrice = isValidNumber ? parsed : MEAL_PRICES[meal];
+
       const newMenuData = {
         ...menuData,
         [date]: {
           ...menuData[date],
           customPrices: {
             ...menuData[date]?.customPrices,
-            [meal]: parseFloat(price) || MEAL_PRICES[meal]
+            [meal]: nextPrice
           }
         }
       };
@@ -224,11 +237,68 @@ export function useMenuData(user) {
       
       const docRef = doc(db, 'userMenus', user.uid);
       await updateDoc(docRef, {
-        [`${date}.customPrices.${meal}`]: parseFloat(price) || MEAL_PRICES[meal]
+        [`${date}.customPrices.${meal}`]: nextPrice
       });
     } catch (err) {
       setError(err.message);
       console.error('Error updating custom price:', err);
+    }
+  };
+
+  // Update quantity for a meal on a specific date
+  const updateMealAmount = async (date, meal, amount) => {
+    if (!user) return;
+
+    try {
+      const parsed = typeof amount === 'number' ? amount : parseInt(amount, 10);
+      const nextAmount = Number.isFinite(parsed) && parsed >= 0 ? parsed : 0;
+
+      const newMenuData = {
+        ...menuData,
+        [date]: {
+          ...menuData[date],
+          quantities: {
+            ...menuData[date]?.quantities,
+            [meal]: nextAmount
+          }
+        }
+      };
+
+      setMenuData(newMenuData);
+
+      const docRef = doc(db, 'userMenus', user.uid);
+      await updateDoc(docRef, {
+        [`${date}.quantities.${meal}`]: nextAmount
+      });
+    } catch (err) {
+      setError(err.message);
+      console.error('Error updating meal amount:', err);
+    }
+  };
+
+  // Toggle alternate prices (double) for a specific date
+  const updateAlternatePricesEnabled = async (date, enabled) => {
+    if (!user) return;
+
+    try {
+      const nextEnabled = !!enabled;
+      const newMenuData = {
+        ...menuData,
+        [date]: {
+          ...menuData[date],
+          useAlternatePrices: nextEnabled
+        }
+      };
+
+      setMenuData(newMenuData);
+
+      const docRef = doc(db, 'userMenus', user.uid);
+      await updateDoc(docRef, {
+        [`${date}.useAlternatePrices`]: nextEnabled
+      });
+    } catch (err) {
+      setError(err.message);
+      console.error('Error updating alternate prices flag:', err);
     }
   };
 
@@ -269,6 +339,8 @@ export function useMenuData(user) {
     calculateMonthlyTotal,
     updateMealSelection,
     updateCustomPrice,
+    updateMealAmount,
+    updateAlternatePricesEnabled,
     loadMonthData,
     applyDefaultMealsToMonth
   };

@@ -503,13 +503,16 @@
   font-weight: 500;
   color: var(--text-primary);
   margin-bottom: 0.5rem;
+  text-align: center;
 }
 
 .price-editor-item {
-  display: flex;
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: 110px 80px 16px 64px;
   align-items: center;
-  margin-bottom: 0.25rem;
+  column-gap: 0.5rem;
+  margin-bottom: 0.5rem;
+  margin-left: 2.5rem;
 }
 
 .price-editor-item:last-child {
@@ -519,10 +522,11 @@
 .price-editor-label {
   font-size: 0.75rem;
   color: var(--text-secondary);
+  text-align: right;
 }
 
 .price-editor-input {
-  width: 4rem;
+  width: 5rem;
   padding: 0.25rem;
   font-size: 0.75rem;
   border: 1px solid var(--border-color);
@@ -533,6 +537,46 @@
 .price-editor-input:focus {
   outline: none;
   border-color: var(--primary-color);
+}
+
+/* Amount Input and Alt Price Toggle */
+.price-multiply {
+  margin: 0 0.25rem;
+  color: var(--text-secondary);
+  text-align: center;
+}
+
+.amount-editor-input {
+  width: 4rem;
+  padding: 0.25rem;
+  font-size: 0.75rem;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  text-align: center;
+}
+
+.amount-editor-input:focus {
+  outline: none;
+  border-color: var(--primary-color);
+}
+
+.alt-price-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.8rem;
+  color: var(--text-primary);
+  margin-bottom: 0.5rem;
+}
+
+.daily-menu-meal-price-alt {
+  font-size: 0.75rem;
+  color: var(--success-color);
+}
+
+.daily-menu-meal-qty {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
 }
 
 /* Daily Total */
@@ -558,6 +602,59 @@
   font-size: 1.125rem;
   font-weight: 700;
   color: var(--primary-color);
+}
+
+/* Modal */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 50;
+}
+
+.modal {
+  background: var(--bg-primary);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  border: 1px solid var(--border-color);
+  width: 100%;
+  max-width: 28rem;
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.modal-title {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.modal-close {
+  background: none;
+  border: none;
+  font-size: 1rem;
+  cursor: pointer;
+  color: var(--text-secondary);
+}
+
+.modal-body {
+  padding: 0.75rem 1rem;
+}
+
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  border-top: 1px solid var(--border-color);
 }
 
 /* View All Button */
